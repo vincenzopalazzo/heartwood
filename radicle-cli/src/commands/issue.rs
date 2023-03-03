@@ -199,6 +199,8 @@ pub fn run(options: Options, ctx: impl term::Context) -> anyhow::Result<()> {
     let repo = storage.repository_mut(id)?;
     let mut issues = Issues::open(*signer.public_key(), &repo)?;
 
+    // FIXME: return an error if the description is None
+    // FIXME: show the issue when it is created
     match options.op {
         Operation::Open {
             title: Some(title),

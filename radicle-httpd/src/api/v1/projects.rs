@@ -568,7 +568,7 @@ mod routes {
 
     use crate::test::{self, get, patch, post, HEAD, HEAD_1, ISSUE_ID, PATCH_ID};
 
-    const CREATED_ISSUE_ID: &str = "745052a1603000b9566445753d7e2fee1ff5041f";
+    const CREATED_ISSUE_ID: &str = "745052a";
 
     #[tokio::test]
     async fn test_projects_root() {

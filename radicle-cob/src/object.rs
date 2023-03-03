@@ -26,20 +26,37 @@ pub enum ParseObjectId {
 
 /// The id of an object
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ObjectId(Oid);
+pub struct ObjectId {
+    // since we use the short object id 
+    // the from call from the oid return a not 
+    // complect id, so this make the oid private 
+    // and prevent people to work with this accidentaly.
+    oid: Oid,
+}
+
+impl ObjectId {
+    pub fn new(oid: Oid) -> Self {
+        ObjectId { oid }
+    }
+
+    pub fn to_short_obj(&self) -> ObjectId {
+        let short = self.to_string();
+        ObjectId::from_str(&short).unwrap()
+    }
+}
 
 impl FromStr for ObjectId {
     type Err = ParseObjectId;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let oid = Oid::from_str(s)?;
-        Ok(ObjectId(oid))
+        Ok(ObjectId::new(oid))
     }
 }
 
 impl From<Oid> for ObjectId {
     fn from(oid: Oid) -> Self {
-        ObjectId(oid)
+        ObjectId::new(oid)
     }
 }
 
@@ -57,13 +74,13 @@ impl From<git2::Oid> for ObjectId {
 
 impl From<&git2::Oid> for ObjectId {
     fn from(oid: &git2::Oid) -> Self {
-        ObjectId(Oid::from(*oid))
+        ObjectId::from(*oid)
     }
 }
 
 impl fmt::Display for ObjectId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f, "{:.7}", self.oid)
     }
 }
 
@@ -72,7 +89,8 @@ impl Serialize for ObjectId {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_bytes(self.0.as_bytes())
+        // FIXME: verify if the call as byte on to string is the same
+        serializer.serialize_bytes(self.to_string().as_bytes())
     }
 }
 
@@ -83,13 +101,13 @@ impl<'de> Deserialize<'de> for ObjectId {
     {
         let raw = <&[u8]>::deserialize(deserializer)?;
         let oid = Oid::try_from(raw).map_err(serde::de::Error::custom)?;
-        Ok(ObjectId(oid))
+        Ok(ObjectId::new(oid))
     }
 }
 
 impl From<&ObjectId> for Component<'_> {
     fn from(id: &ObjectId) -> Self {
-        let refstr = RefString::try_from(id.0.to_string())
+        let refstr = RefString::try_from(id.to_string())
             .expect("collaborative object id's are valid ref strings");
         Component::from_refstr(refstr)
             .expect("collaborative object id's are valid refname components")

@@ -224,18 +224,18 @@ fn parse_refstr(oid: ObjectId, typename: TypeName) {
         .and(Component::from(&oid));
 
     // refs/cobs/<typename>/<object_id> gives back the <typename> and <object_id>
-    assert_eq!(object::parse_refstr(&suffix), Some((typename.clone(), oid)));
+    assert_eq!(object::parse_refstr(&suffix), Some((typename.clone(), oid.to_short_obj())));
 
     // strips a single namespace
     assert_eq!(
         object::parse_refstr(&refname!("refs/namespaces/a").join(&suffix)),
-        Some((typename.clone(), oid))
+        Some((typename.clone(), oid.to_short_obj()))
     );
 
     // strips multiple namespaces
     assert_eq!(
         object::parse_refstr(&refname!("refs/namespaces/a/refs/namespaces/b").join(&suffix)),
-        Some((typename.clone(), oid))
+        Some((typename.clone(), oid.to_short_obj()))
     );
 
     // ignores the extra path
@@ -245,7 +245,7 @@ fn parse_refstr(oid: ObjectId, typename: TypeName) {
                 .join(suffix)
                 .and(refname!("more/paths"))
         ),
-        Some((typename, oid))
+        Some((typename, oid.to_short_obj()))
     );
 }
 

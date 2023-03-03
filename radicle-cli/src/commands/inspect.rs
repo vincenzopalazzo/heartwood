@@ -127,7 +127,6 @@ pub fn run(options: Options, ctx: impl term::Context) -> anyhow::Result<()> {
     match options.target {
         Target::Refs => {
             let path = storage.path_of(&id).join("refs").join("namespaces");
-
             Command::new("tree")
                 .current_dir(path)
                 .args(["--noreport", "--prune"])

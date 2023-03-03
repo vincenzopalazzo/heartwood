@@ -45,7 +45,7 @@ No description provided.
 ╰───────────────────────────────────
 
 
-✓ Patch fd1df2db86867aa859541464fa334d0b22988ea7 created 🌱
+✓ Patch fd1df2d created 🌱
 ```
 
 It will now be listed as one of the project's open patches.
@@ -55,17 +55,17 @@ $ rad patch
 
 ❲YOU PROPOSED❳
 
-define power requirements fd1df2db868 R0 3e674d1 (flux-capacitor-power) ahead 1, behind 0
+define power requirements fd1df2d R0 3e674d1 (flux-capacitor-power) ahead 1, behind 0
 └─ * opened by did:key:z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi (you) [..]
-└─ * patch id fd1df2db86867aa859541464fa334d0b22988ea7
+└─ * patch id fd1df2d
 
 ❲OTHERS PROPOSED❳
 
 Nothing to show.
 
-$ rad patch show fd1df2db86867aa859541464fa334d0b22988ea7
+$ rad patch show fd1df2d
 
-patch fd1df2db86867aa859541464fa334d0b22988ea7
+patch fd1df2d
 
 ╭─ define power requirements ───────
 
@@ -101,27 +101,27 @@ $ rad patch update --message "Add README, just for the fun" --no-confirm fd1df2d
 ✓ Pushing HEAD to storage...
 ✓ Analyzing remotes...
 
-fd1df2db868 R0 (3e674d1) -> R1 (27857ec)
+fd1df2d R0 (3e674d1) -> R1 (27857ec)
 1 commit(s) ahead, 0 commit(s) behind
 
 
-✓ Patch fd1df2db86867aa859541464fa334d0b22988ea7 updated 🌱
+✓ Patch fd1df2d updated 🌱
 
 ```
 
 And lets leave a quick comment for our team:
 
 ```
-$ rad comment fd1df2db86867aa859541464fa334d0b22988ea7 --message 'I cannot wait to get back to the 90s!'
+$ rad comment fd1df2d --message 'I cannot wait to get back to the 90s!'
 84ef44764de73695cf30e6b284585d2c50d6d0e5
-$ rad comment fd1df2db86867aa859541464fa334d0b22988ea7 --message 'I cannot wait to get back to the 90s!' --reply-to 84ef44764de73695cf30e6b284585d2c50d6d0e5
+$ rad comment fd1df2d --message 'I cannot wait to get back to the 90s!' --reply-to 84ef44764de73695cf30e6b284585d2c50d6d0e5
 2fa3ac18d82ebdafe73484a15fa9823355c4664b
 ```
 
 Now, let's checkout the patch that we just created:
 
 ```
-$ rad patch checkout fd1df2db86867aa859541464fa334d0b22988ea7
+$ rad patch checkout fd1df2d
 ✓ Performing patch checkout...
-✓ Switched to branch patch/fd1df2db868
+✓ Switched to branch patch/fd1df2d
 ```

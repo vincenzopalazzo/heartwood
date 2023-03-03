@@ -212,7 +212,6 @@ fn rad_id_rebase() {
 }
 
 #[test]
-#[ignore]
 fn rad_patch() {
     let mut environment = Environment::new();
     let profile = environment.profile("alice");
