@@ -54,3 +54,5 @@ pub mod rad_untag;
 pub mod rad_untrack;
 #[path = "commands/web.rs"]
 pub mod rad_web;
+#[path ="commands/remote.rs"]
+pub mod remote;
