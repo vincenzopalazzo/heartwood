@@ -4,7 +4,7 @@ use std::{io::ErrorKind, iter, process};
 use anyhow::anyhow;
 
 use radicle_cli::commands::*;
-use radicle_cli::terminal as term;
+use radicle_cli::terminal::{self as term, args};
 
 pub const NAME: &str = "rad";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -322,6 +322,12 @@ fn run_other(exe: &str, args: &[OsString]) -> Result<(), Option<anyhow::Error>> 
             rad_web::HELP,
             "Web",
             rad_web::run,
+            args.to_vec(),
+        ),
+        "remote" => term::run_command_args::<rad_remote::Options, _>(
+            rad_remote::HELP,
+            "Remote",
+            rad_remote::run,
             args.to_vec(),
         ),
         _ => {

@@ -36,6 +36,8 @@ pub mod rad_patch;
 pub mod rad_path;
 #[path = "commands/push.rs"]
 pub mod rad_push;
+#[path = "commands/remote.rs"]
+pub mod rad_remote;
 #[path = "commands/review.rs"]
 pub mod rad_review;
 #[path = "commands/rm.rs"]
@@ -54,5 +56,3 @@ pub mod rad_untag;
 pub mod rad_untrack;
 #[path = "commands/web.rs"]
 pub mod rad_web;
-#[path ="commands/remote.rs"]
-pub mod remote;
