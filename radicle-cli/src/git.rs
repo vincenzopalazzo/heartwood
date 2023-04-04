@@ -175,21 +175,28 @@ pub fn is_signing_configured(repo: &Path) -> Result<bool, anyhow::Error> {
 }
 
 /// Return the list of radicle remotes for the given repository.
-pub fn remotes(repo: &git2::Repository) -> anyhow::Result<Vec<(String, NodeId)>> {
-    let mut remotes = Vec::new();
+pub fn rad_remotes(repo: &git2::Repository) -> anyhow::Result<Vec<git2::Remote>> {
+    let remotes: Vec<_> = repo
+        .remotes()?
+        .iter()
+        .filter_map(|name| {
+            let Some(name) = name else {
+                return None
+            };
+            let Some(remote) = repo.find_remote(name).ok() else {
+                return None
+            };
+            let Some(url) = remote.url() else {
+                return None
+            };
 
-    for name in repo.remotes().iter().flatten().flatten() {
-        let remote = repo.find_remote(name)?;
-        for refspec in remote.refspecs() {
-            if refspec.direction() != git2::Direction::Fetch {
-                continue;
+            if url.starts_with(radicle::storage::git::transport::local::Url::SCHEME) {
+                Some(remote)
+            } else {
+                None
             }
-            if let Some((peer, _)) = refspec.src().and_then(self::parse_remote) {
-                remotes.push((name.to_owned(), peer));
-            }
-        }
-    }
-
+        })
+        .collect();
     Ok(remotes)
 }
 

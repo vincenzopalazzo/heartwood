@@ -46,6 +46,7 @@ pub enum Operation {
 #[derive(Debug)]
 pub struct Options {
     pub op: Operation,
+    pub verbose: bool,
 }
 
 impl Args for Options {
@@ -55,11 +56,15 @@ impl Args for Options {
         let mut parser = lexopt::Parser::from_args(args);
         let mut op: Option<OperationName> = None;
         let mut did: Option<Url> = None;
+        let mut verbose = false;
 
         while let Some(arg) = parser.next()? {
             match arg {
                 Long("help") => {
                     return Err(Error::Help.into());
+                }
+                Long("verbose") | Short('v') => {
+                    verbose = true;
                 }
                 Value(val) if op.is_none() => match val.to_string_lossy().as_ref() {
                     "a" | "add" => op = Some(OperationName::Add),
@@ -84,19 +89,19 @@ impl Args for Options {
             OperationName::List => Operation::List,
         };
 
-        Ok((Options { op }, vec![]))
+        Ok((Options { op, verbose }, vec![]))
     }
 }
 
 pub fn run(options: Options, ctx: impl Context) -> anyhow::Result<()> {
-    let (workdir, id) = radicle::rad::cwd()
+    let (working, id) = radicle::rad::cwd()
         .map_err(|_| anyhow!("this command must be run in the context of a project"))?;
     let profile = ctx.profile()?;
     let repository = profile.storage.repository(id)?;
 
     match options.op {
         Operation::Add { url: ref did } => self::add::run(&repository, &profile, did)?,
-        Operation::List => self::list::run(&repository, &profile)?,
+        Operation::List => self::list::run(&working, &options)?,
     };
     Ok(())
 }

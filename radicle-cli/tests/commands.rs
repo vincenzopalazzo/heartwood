@@ -565,6 +565,46 @@ fn test_replication_via_seed() {
 
 #[test]
 #[ignore]
+fn rad_remote() {
+    let mut environment = Environment::new();
+    let alice = environment.node("alice");
+    let bob = environment.node("bob");
+    let working = environment.tmp().join("working");
+
+    fixtures::repository(working.join("alice"));
+
+    test(
+        "examples/workflow/1-new-project.md",
+        &working.join("alice"),
+        Some(&alice.home),
+        [],
+    )
+    .unwrap();
+
+    let alice = alice.spawn(Config::default());
+    let mut bob = bob.spawn(Config::default());
+
+    bob.connect(&alice).converge([&alice]);
+
+    test(
+        "examples/workflow/2-cloning.md",
+        &working.join("bob"),
+        Some(&bob.home),
+        [],
+    )
+    .unwrap();
+
+    test(
+        "examples/rad-remote.md",
+        &working.join("bob").join("heartwood"),
+        Some(&bob.home),
+        [],
+    )
+    .unwrap();
+}
+
+#[test]
+#[ignore]
 fn rad_workflow() {
     let mut environment = Environment::new();
     let alice = environment.node("alice");
