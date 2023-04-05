@@ -11,8 +11,8 @@ pub fn run(repository: &git::Repository, url: &Url) -> anyhow::Result<()> {
     let (name, url) = add_new_remote(repository, &alias, url)?;
 
     term::println(
-        term::format::badge_primary(":rocket:"),
-        term::format::highlight(format!("Remote {name} added with {url}")),
+        term::format::badge_primary("🚀"),
+        term::format::italic(format!("Remote {name} added with {url}")),
     );
     Ok(())
 }
