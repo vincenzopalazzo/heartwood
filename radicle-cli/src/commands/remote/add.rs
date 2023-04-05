@@ -17,7 +17,7 @@ pub fn run(repository: &git::Repository, url: &Url) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn lookup_for_remote(repository: &git::Repository, alias: &str) -> anyhow::Result<bool> {
+pub(super) fn lookup_for_remote(repository: &git::Repository, alias: &str) -> anyhow::Result<bool> {
     let found = git::rad_has_remote(repository, alias)?;
     Ok(found)
 }
