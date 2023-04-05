@@ -10,8 +10,6 @@ use std::str::FromStr;
 use anyhow::anyhow;
 
 use radicle::git::Url;
-use radicle::prelude::Id;
-use radicle::storage::ReadStorage;
 
 use crate::terminal::args::{string, Error};
 use crate::terminal::{Args, Context, Help};
@@ -93,14 +91,12 @@ impl Args for Options {
     }
 }
 
-pub fn run(options: Options, ctx: impl Context) -> anyhow::Result<()> {
-    let (working, id) = radicle::rad::cwd()
+pub fn run(options: Options, _: impl Context) -> anyhow::Result<()> {
+    let (working, _) = radicle::rad::cwd()
         .map_err(|_| anyhow!("this command must be run in the context of a project"))?;
-    let profile = ctx.profile()?;
-    let repository = profile.storage.repository(id)?;
 
     match options.op {
-        Operation::Add { url: ref did } => self::add::run(&repository, &profile, did)?,
+        Operation::Add { url: ref did } => self::add::run(&working, did)?,
         Operation::List => self::list::run(&working, &options)?,
     };
     Ok(())

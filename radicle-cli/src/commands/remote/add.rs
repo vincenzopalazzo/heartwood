@@ -1,30 +1,26 @@
 use radicle::git::Url;
-use radicle::storage::git::Repository;
-use radicle::Profile;
 
-use crate::terminal as term;
+use crate::{git, terminal as term};
 
 /// core command to run the `rad remote add ...` subcommand.
-pub fn run(repository: &Repository, profile: &Profile, id: &Url) -> anyhow::Result<()> {
-    if lookup_for_remote(repository, &id.to_string())? {
-        anyhow::bail!("remote with did `{id}` already present");
+pub fn run(repository: &git::Repository, url: &Url) -> anyhow::Result<()> {
+    let alias = url.repo.canonical();
+    if lookup_for_remote(repository, &alias)? {
+        anyhow::bail!("remote with did `{url}` already present");
     }
-    add_new_remote(repository, &id.to_string())?;
+    add_new_remote(repository, &alias, url)?;
 
     term::println("Done", "Remote added with success");
     Ok(())
 }
 
-fn lookup_for_remote(repository: &Repository, alias: &str) -> anyhow::Result<bool> {
-    let git = &repository.backend;
-    let remotes = git.remotes()?;
-    // FIXME: I can use `find_remote`?
-    let it = remotes.iter().find(|it| it.unwrap() == alias);
-    Ok(it.is_some())
+fn lookup_for_remote(repository: &git::Repository, alias: &str) -> anyhow::Result<bool> {
+    let found = git::rad_has_remote(repository, alias)?;
+    Ok(found)
 }
 
-fn add_new_remote(repository: &Repository, alias: &str) -> anyhow::Result<()> {
-    let git = &repository.backend;
-    git.remote(alias, alias)?;
+fn add_new_remote(repository: &git::Repository, alias: &str, url: &Url) -> anyhow::Result<()> {
+    let remote = repository.remote(alias, &url.to_string())?;
+    println!("added {:?} with url {:?}", remote.name(), remote.url());
     Ok(())
 }
