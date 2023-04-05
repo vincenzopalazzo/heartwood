@@ -14,9 +14,12 @@ pub fn run(repository: &git::Repository, profile: &Profile, did: &Did, id: Id) -
         anyhow::bail!("remote with did `{did}` already present");
     }
     let url = Url::from(id).with_namespace(pubkey);
-    add_new_remote(repository, &alias, &url)?;
+    let (name, url) = add_new_remote(repository, &alias, &url)?;
 
-    term::println("Done", "Remote added with success");
+    term::println(
+        term::format::badge_primary("🚀"),
+        term::format::italic(format!("Remote {name} added with {url}")),
+    );
     Ok(())
 }
 
@@ -35,8 +38,14 @@ fn lookup_for_remote(repository: &git::Repository, alias: &str) -> anyhow::Resul
     Ok(found)
 }
 
-fn add_new_remote(repository: &git::Repository, alias: &str, url: &Url) -> anyhow::Result<()> {
+fn add_new_remote(
+    repository: &git::Repository,
+    alias: &str,
+    url: &Url,
+) -> anyhow::Result<(String, String)> {
     let remote = repository.remote(alias, &url.to_string())?;
-    println!("added {:?} with url {:?}", remote.name(), remote.url());
-    Ok(())
+    Ok((
+        remote.name().unwrap_or_default().to_owned(),
+        remote.url().unwrap().to_owned(),
+    ))
 }

@@ -22,7 +22,8 @@ pub const HELP: Help = Help {
 Usage
     rad remote
     rad remote list
-    rad remote add <name> <id>
+    rad remote add <url>
+    rad remote rm <alias>
 Options
         --help                 Print help
 "#,
