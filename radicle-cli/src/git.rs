@@ -186,6 +186,7 @@ pub fn rad_remotes(repo: &git2::Repository) -> anyhow::Result<Vec<git2::Remote>>
             let Some(remote) = repo.find_remote(name).ok() else {
                 return None
             };
+
             let Some(url) = remote.url() else {
                 return None
             };
@@ -198,6 +199,25 @@ pub fn rad_remotes(repo: &git2::Repository) -> anyhow::Result<Vec<git2::Remote>>
         })
         .collect();
     Ok(remotes)
+}
+
+/// Return true is the remote is stored inside the  the list of radicle remotes.
+pub fn rad_has_remote(repo: &git2::Repository, alias: &str) -> anyhow::Result<bool> {
+    let remotes = repo.remotes()?;
+    let remotes: Vec<_> = remotes
+        .iter()
+        .filter_map(|name| {
+            let Some(name) = name else {
+                return None;
+            };
+
+            if name == alias {
+                return Some(name);
+            }
+            None
+        })
+        .collect();
+    Ok(!remotes.is_empty())
 }
 
 /// Get the repository's "rad" remote.

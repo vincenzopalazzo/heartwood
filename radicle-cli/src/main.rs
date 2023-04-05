@@ -4,7 +4,7 @@ use std::{io::ErrorKind, iter, process};
 use anyhow::anyhow;
 
 use radicle_cli::commands::*;
-use radicle_cli::terminal::{self as term, args};
+use radicle_cli::terminal as term;
 
 pub const NAME: &str = "rad";
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
