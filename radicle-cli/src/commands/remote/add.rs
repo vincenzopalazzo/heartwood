@@ -33,7 +33,7 @@ fn lookup_for_alias(profile: &Profile, pubkey: &PublicKey) -> anyhow::Result<Opt
     Ok(node.alias)
 }
 
-fn lookup_for_remote(repository: &git::Repository, alias: &str) -> anyhow::Result<bool> {
+pub(super) fn lookup_for_remote(repository: &git::Repository, alias: &str) -> anyhow::Result<bool> {
     let found = git::rad_has_remote(repository, alias)?;
     Ok(found)
 }
