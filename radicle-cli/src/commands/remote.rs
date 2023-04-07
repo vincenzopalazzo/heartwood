@@ -13,7 +13,7 @@ use anyhow::anyhow;
 use radicle::prelude::Did;
 
 use crate::terminal as term;
-use crate::terminal::args::{Error, string};
+use crate::terminal::args::{string, Error};
 use crate::terminal::{Args, Context, Help};
 
 pub const HELP: Help = Help {
@@ -24,7 +24,7 @@ pub const HELP: Help = Help {
 Usage
     rad remote
     rad remote list
-    rad remote add <url>
+    rad remote add <url> [--alias]
     rad remote rm <alias>
 Options
         --help                 Print help
@@ -41,7 +41,7 @@ pub enum OperationName {
 
 #[derive(Debug)]
 pub enum Operation {
-    Add { did: Did },
+    Add { did: Did, alias: Option<String> },
     Rm { alias: String },
     List,
 }
@@ -70,6 +70,11 @@ impl Args for Options {
                 Long("verbose") | Short('v') => {
                     verbose = true;
                 }
+                Long("alias") | Short('a') => {
+                    let value = parser.value()?;
+                    let value = string(&value);
+                    alias = Some(value);
+                }
                 Value(val) if op.is_none() => match val.to_string_lossy().as_ref() {
                     "a" | "add" => op = Some(OperationName::Add),
                     "l" | "list" => op = Some(OperationName::List),
@@ -91,6 +96,7 @@ impl Args for Options {
         let op = match op.unwrap_or_default() {
             OperationName::Add => Operation::Add {
                 did: did.ok_or(anyhow!("did required, try to run `rad remote add <did>`"))?,
+                alias,
             },
             OperationName::List => Operation::List,
             OperationName::Rm => Operation::Rm {
@@ -110,7 +116,9 @@ pub fn run(options: Options, ctx: impl Context) -> anyhow::Result<()> {
     let profile = ctx.profile()?;
 
     match options.op {
-        Operation::Add { ref did } => self::add::run(&working, &profile, did, id)?,
+        Operation::Add { ref did, ref alias } => {
+            self::add::run(&working, &profile, did, alias, id)?
+        }
         Operation::Rm { ref alias } => self::rm::run(&working, alias)?,
         Operation::List => self::list::run(&working, &options)?,
     };
