@@ -641,6 +641,20 @@ fn test_replication_via_seed() {
 }
 
 #[test]
+fn rad_remote() {
+    let mut environment = Environment::new();
+    let profile = environment.profile("alice");
+    let working = tempfile::tempdir().unwrap();
+    let home = &profile.home;
+
+    // Setup a test repository.
+    fixtures::repository(working.path());
+
+    test("examples/rad-init.md", working.path(), Some(home), []).unwrap();
+    test("examples/rad-remote.md", working.path(), Some(home), []).unwrap();
+}
+
+#[test]
 #[ignore]
 fn rad_workflow() {
     let mut environment = Environment::new();
