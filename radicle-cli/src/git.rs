@@ -217,7 +217,9 @@ pub fn is_signing_configured(repo: &Path) -> Result<bool, anyhow::Error> {
 }
 
 /// Return the list of radicle remotes for the given repository.
-pub fn rad_remotes(repo: &git2::Repository) -> anyhow::Result<Vec<Remote>> {
+pub fn rad_remotes(
+    repo: &git2::Repository,
+) -> anyhow::Result<Vec<Result<Remote<'_>, RemoteError>>> {
     let remotes: Vec<_> = repo
         .remotes()?
         .iter()
@@ -225,11 +227,11 @@ pub fn rad_remotes(repo: &git2::Repository) -> anyhow::Result<Vec<Remote>> {
             let remote = repo.find_remote(name?).ok()?;
             match Remote::try_from(remote) {
                 // ignore URLs that are not rad://
-                Err(RemoteError::ParseUrl(UrlError::UnsupportedScheme)) => Ok(None),
+                Err(RemoteError::ParseUrl(UrlError::UnsupportedScheme)) => None,
                 // raise an error if there's an invalid URL
-                Err(err) => Err(err), // I think this actually won't work because we're in `filter_map`
-                Ok(remote) => Ok(Some(remote)),
-            }.ok()?
+                Err(err) => Some(Err(err)), // I think this actually won't work because we're in `filter_map`
+                Ok(remote) => Some(Ok(remote)),
+            }
         })
         .collect();
     Ok(remotes)
@@ -260,8 +262,7 @@ pub fn add_remote<'a>(
     name: &'a str,
     url: &'a radicle::git::Url,
 ) -> anyhow::Result<Remote<'a>> {
-    let url = url.to_string();
-    let remote = repo.remote(name, &url)?;
+    let remote = repo.remote(name, &url.to_string())?;
     Ok(Remote::try_from(remote)?)
 }
 
