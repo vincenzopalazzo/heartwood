@@ -880,6 +880,7 @@ where
 
                 return Ok(relay);
             }
+            // FIXME: I think this is the problem, so take a look to it.
             // Process a peer inventory update announcement by (maybe) fetching.
             AnnouncementMessage::Refs(message) => {
                 for theirs in message.refs.iter() {
@@ -938,7 +939,9 @@ where
                     if self.sessions.is_connected(announcer) {
                         match self.should_fetch_refs_announcement(message, &repo_entry.scope) {
                             Ok(true) => self.fetch(message.rid, announcer),
-                            Ok(false) => {}
+                            Ok(false) => {
+                                debug!(target: "service", "AnnounceRefs from {} should not be fetch {:?}!", relayer, message)
+                            }
                             Err(e) => {
                                 error!(target: "service", "Failed to check refs announcement: {e}");
                                 return Err(session::Error::Misbehavior);

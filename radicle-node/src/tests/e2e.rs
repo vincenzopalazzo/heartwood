@@ -1,3 +1,4 @@
+use std::time::Duration;
 use std::{collections::HashSet, thread, time};
 
 use radicle::crypto::{test::signer::MockSigner, Signer};
@@ -733,6 +734,36 @@ fn test_connection_crossing() {
     let s2 = bob.handle.sessions().unwrap().contains_key(&alice.id);
 
     assert!(s1 ^ s2, "Exactly one session should be established");
+}
+
+#[test]
+fn test_announce_refs_untrusted() {
+    logger::init(log::Level::Debug);
+
+    let tmp = tempfile::tempdir().unwrap();
+
+    let mut alice = Node::init(tmp.path());
+    let bob = Node::init(tmp.path());
+
+    let rid = alice.project("acme", "");
+
+    let alice = alice.spawn(service::Config::default());
+    let mut bob = bob.spawn(service::Config::default());
+
+    bob.connect(&alice);
+
+    let auth = bob.rad("auth", &[], tmp.path());
+    assert!(auth.is_ok(), "{:?}", auth);
+    let clone = bob.rad("clone", &[rid.to_string().as_str()], tmp.path());
+    assert!(clone.is_ok(), "{:?}", clone);
+
+    bob.issue(rid, "issue", "");
+    assert!(bob.handle.announce_refs(rid).is_ok());
+
+    let events = alice.handle.subscribe(Duration::from_secs(1));
+    assert!(events.is_ok());
+    let events = events.unwrap().collect::<Vec<_>>();
+    assert!(!events.is_empty());
 }
 
 #[test]
