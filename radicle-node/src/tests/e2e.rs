@@ -6,6 +6,7 @@ use radicle::node::{FetchResult, Handle as _};
 use radicle::storage::{ReadRepository, ReadStorage, WriteRepository, WriteStorage};
 use radicle::test::fixtures;
 use radicle::{assert_matches, rad};
+use service::Config;
 
 use crate::service;
 use crate::service::config::Limits;
@@ -877,4 +878,92 @@ fn test_outdated_sigrefs() {
 
     assert_ne!(eves_refs, old_refs);
     assert_eq!(eves_refs_expected, eves_refs);
+}
+
+#[test]
+// FIXME: well this is a test, but I do not know exactly what I am looking for.
+//
+// Hoping just to reproduce my problem.
+fn test_fetch_old_refs_for_new_nodes() {
+    logger::init(log::Level::Debug);
+
+    let tmp_alice = tempfile::tempdir().unwrap();
+
+    // alice start a very awesome project on the
+    // radicle network, so she start a new node
+    let mut alice = Node::init(tmp_alice.path());
+    let (git_repo, rid) =
+        alice.project_with_path("awesome-alice", "an awesome project", tmp_alice.path());
+    let alice = alice.spawn(Config::default());
+
+    let project_path = tmp_alice.path().join("awesome-alice");
+    // now alice start to feel some issue to manage the
+    // work to do on the repository.
+    (0..2).for_each(|i| {
+        alice.issue(
+            rid,
+            &format!("{i}: just a title"),
+            &format!("{i}: just a description"),
+        );
+    });
+
+    // FIXME: create a branch before!
+
+    // alice make some change to in a new branch
+    fixtures::populate(&git_repo, 2);
+
+    let result = alice.rad("patch", &["open", "--no-message"], project_path);
+    assert!(result.is_ok());
+
+    // FIXME: make a patch in some way as I did with the issue.
+
+    let tmp_bob = tempfile::tempdir().unwrap();
+
+    // Now bob see alice very exited talking about this new project
+    // and decided to get involved.
+    let bob = Node::init(tmp_bob.path());
+    let mut bob = bob.spawn(Config::default());
+    let result = bob.rad("auth", &[], tmp_bob.path());
+    assert!(result.is_ok(), "while running `rad auth` an error occurse");
+
+    // Alice send to node information to bob, and
+    // bob now will connect to the alice node
+    // and run `rad sync --fetch`.
+    bob.connect(&alice);
+
+    // bob clone the information about the repository
+    let result = bob.rad("clone", &[rid.to_string().as_str()], tmp_bob.path());
+    assert!(
+        result.is_ok(),
+        "while running `rad clone {rid}` an error occurse {:?}",
+        result
+    );
+
+    let rpath = format!("{}/awesome-alice", tmp_bob.path().to_str().unwrap());
+
+    let result = bob.rad("sync", &["--fetch"], rpath.clone());
+    assert!(
+        result.is_ok(),
+        "while running `rad fetch --sync` an error occurse: {:?}",
+        result
+    );
+
+    // Bob that is in sync with the repository
+    let result = bob.rad("issue", &[], rpath.clone());
+    assert!(
+        result.is_ok(),
+        "while running `rad list` an error occurse: {:?}",
+        result
+    i);
+
+    // FIXME: check the patches
+
+    // FIXME: open a couple of issue as bob
+    // FIXME: open a new patch as bob
+
+    // FIXME: alice check the patch
+    //
+    // FIXME: carl clone the repo
+    // FIXME: carl check the issue
+    // FIXME: carl the patch
 }

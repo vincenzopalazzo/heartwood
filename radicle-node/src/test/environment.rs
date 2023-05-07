@@ -382,6 +382,20 @@ impl<G: cyphernet::Ecdh<Pk = NodeId> + Signer + Clone> Node<G> {
 
         self.project_from(name, description, &repo)
     }
+
+    /// Populate a storage instance with a project.
+    pub fn project_with_path(
+        &mut self,
+        name: &str,
+        description: &str,
+        path: &Path,
+    ) -> (git2::Repository, Id) {
+        let (repo, _) = fixtures::repository(path.join(name));
+
+        let rid = self.project_from(name, description, &repo);
+
+        (repo, rid)
+    }
 }
 
 /// Checks whether the nodes have converged in their routing tables.

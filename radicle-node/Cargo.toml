@@ -7,7 +7,7 @@ edition = "2021"
 build = "../build.rs"
 
 [features]
-test = ["radicle/test", "radicle-crypto/test", "radicle-crypto/cyphernet", "qcheck", "snapbox"]
+test = ["radicle/test", "radicle-crypto/test", "radicle-crypto/cyphernet", "qcheck", "snapbox", "git2"]
 
 [dependencies]
 amplify = { version = "4.0.0" }
@@ -38,6 +38,7 @@ serde_json = { version = "1", features = ["preserve_order"] }
 snapbox = { version = "0.4.3", optional = true }
 tempfile = { version = "3.3.0" }
 thiserror = { version = "1" }
+git2 = { version = "*", optional = true, default-features = false, features = ["vendored-libgit2"] }
 
 [dependencies.radicle]
 path = "../radicle"

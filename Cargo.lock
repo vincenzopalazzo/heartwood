@@ -2064,6 +2064,7 @@ dependencies = [
  "crossbeam-channel",
  "cyphernet",
  "fastrand",
+ "git2",
  "io-reactor",
  "lexopt",
  "libc",

@@ -225,7 +225,6 @@ where
         &self,
     ) -> Result<impl Iterator<Item = Result<(ObjectId, T, Lamport), Error>> + 'a, Error> {
         let raw = cob::list(self.repo, T::type_name())?;
-
         Ok(raw.into_iter().map(|o| {
             let (obj, clock) = T::from_history(o.history(), self.repo)?;
             Ok((*o.id(), obj, clock))
