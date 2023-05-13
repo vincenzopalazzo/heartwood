@@ -1,3 +1,4 @@
+use std::result;
 use std::{collections::HashSet, thread, time};
 
 use radicle::crypto::{test::signer::MockSigner, Signer};
@@ -887,16 +888,17 @@ fn test_outdated_sigrefs() {
 fn test_fetch_old_refs_for_new_nodes() {
     logger::init(log::Level::Debug);
 
-    let tmp_alice = tempfile::tempdir().unwrap();
+    let tmp_dir = tempfile::tempdir().unwrap();
 
     // alice start a very awesome project on the
     // radicle network, so she start a new node
-    let mut alice = Node::init(tmp_alice.path());
-    let (git_repo, rid) =
-        alice.project_with_path("awesome-alice", "an awesome project", tmp_alice.path());
+    let mut alice = Node::init(tmp_dir.path());
+    let rad_path = tmp_dir.path().join("awesome-alice");
+    let (alice_git, _) = fixtures::repository(rad_path.clone());
+    let rid = alice.project_from("awesome-alice", "an awesome project", &alice_git);
+
     let alice = alice.spawn(Config::default());
 
-    let project_path = tmp_alice.path().join("awesome-alice");
     // now alice start to feel some issue to manage the
     // work to do on the repository.
     (0..2).for_each(|i| {
@@ -907,15 +909,33 @@ fn test_fetch_old_refs_for_new_nodes() {
         );
     });
 
-    // FIXME: create a branch before!
 
-    // alice make some change to in a new branch
-    fixtures::populate(&git_repo, 2);
-
-    let result = alice.rad("patch", &["open", "--no-message"], project_path);
+    let result = alice.rad("auth", &[], rad_path.clone());
     assert!(result.is_ok());
 
-    // FIXME: make a patch in some way as I did with the issue.
+    // alice make some change to in a new branch
+    let refs = fixtures::populate(&alice_git, 2);
+    assert!(!refs.is_empty());
+    log::info!("refs returned {:?}", refs);
+
+    for single_ref in refs {
+        let result = alice_git.set_head(&single_ref);
+        assert!(result.is_ok());
+        let result = alice.rad("patch", &["open", "-m", "just a title"], rad_path.clone());
+        assert!(result.is_ok(), "{:?}", result);
+    }
+    let result = alice.rad("patch", &[], rad_path);
+    assert!(
+        result.is_ok(),
+        "while running `rad patch` an error occurse: {:?}",
+        result
+    );
+
+    let result = alice_git.remotes();
+    log::info!("all the remotes {:?}", result.unwrap().into_iter().map(|i| i.unwrap().to_string()).collect::<Vec<_>>());
+    let result = alice_git.find_remote("rad").unwrap().push::<String>(&[], None);
+    assert!(result.is_ok(), "{:?}", result);
+    log::info!("running `git push rad` return the result: {:?}", result);
 
     let tmp_bob = tempfile::tempdir().unwrap();
 
@@ -923,6 +943,8 @@ fn test_fetch_old_refs_for_new_nodes() {
     // and decided to get involved.
     let bob = Node::init(tmp_bob.path());
     let mut bob = bob.spawn(Config::default());
+
+    let project_path = tmp_bob.path().join("awesome-alice");
     let result = bob.rad("auth", &[], tmp_bob.path());
     assert!(result.is_ok(), "while running `rad auth` an error occurse");
 
@@ -939,9 +961,7 @@ fn test_fetch_old_refs_for_new_nodes() {
         result
     );
 
-    let rpath = format!("{}/awesome-alice", tmp_bob.path().to_str().unwrap());
-
-    let result = bob.rad("sync", &["--fetch"], rpath.clone());
+    let result = bob.rad("sync", &["--fetch"], project_path.clone());
     assert!(
         result.is_ok(),
         "while running `rad fetch --sync` an error occurse: {:?}",
@@ -949,14 +969,20 @@ fn test_fetch_old_refs_for_new_nodes() {
     );
 
     // Bob that is in sync with the repository
-    let result = bob.rad("issue", &[], rpath.clone());
+    let result = bob.rad("issue", &[], project_path.clone());
     assert!(
         result.is_ok(),
         "while running `rad list` an error occurse: {:?}",
         result
-    i);
+    );
 
-    // FIXME: check the patches
+    // Bob now check out the patches open in the repository
+    let result = bob.rad("patch", &[], project_path);
+    assert!(
+        result.is_ok(),
+        "while running `rad patch` an error occurse: {:?}",
+        result
+    );
 
     // FIXME: open a couple of issue as bob
     // FIXME: open a new patch as bob
@@ -966,4 +992,105 @@ fn test_fetch_old_refs_for_new_nodes() {
     // FIXME: carl clone the repo
     // FIXME: carl check the issue
     // FIXME: carl the patch
+}
+
+// FIXME: well this is a test, but I do not know exactly what I am looking for.
+//
+// Hoping just to reproduce my problem.
+fn test_fetch_old_refs_for_new_nodes_both_online() {
+    logger::init(log::Level::Debug);
+
+    let tmp_dir = tempfile::tempdir().unwrap();
+    let tmp_bob = tempfile::tempdir().unwrap();
+
+    // alice start a very awesome project on the
+    // radicle network, so she start a new node
+    let mut alice = Node::init(tmp_dir.path());
+    let rad_path = tmp_dir.path().join("awesome-alice");
+    let (alice_git, _) = fixtures::repository(rad_path.clone());
+    let rid = alice.project_from("awesome-alice", "an awesome project", &alice_git);
+
+    let alice = alice.spawn(Config::default());
+    // Now bob see alice very exited talking about this new project
+    // and decided to get involved.
+    let bob = Node::init(tmp_bob.path());
+    let mut bob = bob.spawn(Config::default());
+
+    let result = bob.rad("auth", &[], tmp_bob.path());
+    assert!(result.is_ok(), "while running `rad auth` an error occurse");
+
+    // Alice send to node information to bob, and
+    // bob now will connect to the alice node
+    // and run `rad sync --fetch`.
+    bob.connect(&alice);
+
+    // now alice start to feel some issue to manage the
+    // work to do on the repository.
+    (0..2).for_each(|i| {
+        alice.issue(
+            rid,
+            &format!("{i}: just a title"),
+            &format!("{i}: just a description"),
+        );
+    });
+
+
+    let result = alice.rad("auth", &[], rad_path.clone());
+    assert!(result.is_ok());
+
+    // alice make some change to in a new branch
+    let refs = fixtures::populate(&alice_git, 2);
+    assert!(!refs.is_empty());
+    log::info!("refs returned {:?}", refs);
+
+    for single_ref in refs {
+        let result = alice_git.set_head(&single_ref);
+        assert!(result.is_ok());
+        let result = alice.rad("patch", &["open", "-m", "just a title"], rad_path.clone());
+        assert!(result.is_ok(), "{:?}", result);
+    }
+    let result = alice.rad("patch", &[], rad_path);
+    assert!(
+        result.is_ok(),
+        "while running `rad patch` an error occurse: {:?}",
+        result
+    );
+
+    let result = alice_git.remotes();
+    log::info!("all the remotes {:?}", result.unwrap().into_iter().map(|i| i.unwrap().to_string()).collect::<Vec<_>>());
+    let result = alice_git.find_remote("rad").unwrap().push::<String>(&[], None);
+    assert!(result.is_ok(), "{:?}", result);
+    log::info!("running `git push rad` return the result: {:?}", result);
+
+    let project_path = tmp_bob.path().join("awesome-alice");
+    // bob clone the information about the repository
+    let result = bob.rad("clone", &[rid.to_string().as_str()], tmp_bob.path());
+    assert!(
+        result.is_ok(),
+        "while running `rad clone {rid}` an error occurse {:?}",
+        result
+    );
+
+    let result = bob.rad("sync", &["--fetch"], project_path.clone());
+    assert!(
+        result.is_ok(),
+        "while running `rad fetch --sync` an error occurse: {:?}",
+        result
+    );
+
+    // Bob that is in sync with the repository
+    let result = bob.rad("issue", &[], project_path.clone());
+    assert!(
+        result.is_ok(),
+        "while running `rad list` an error occurse: {:?}",
+        result
+    );
+
+    // Bob now check out the patches open in the repository
+    let result = bob.rad("patch", &[], project_path);
+    assert!(
+        result.is_ok(),
+        "while running `rad patch` an error occurse: {:?}",
+        result
+    );
 }

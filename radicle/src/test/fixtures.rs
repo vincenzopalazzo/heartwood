@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use radicle_git_ext::ref_format::{RefStr, RefString};
+
 use crate::crypto::{Signer, Verified};
 use crate::git;
 use crate::identity::Id;
@@ -131,6 +133,49 @@ pub fn populate(repo: &git2::Repository, scale: usize) -> Vec<git::Qualified> {
     }
     refs
 }
+
+/// Populate a repository with commits, branches and blobs.
+pub fn populate_current_branch(repo: &git2::Repository, scale: usize) -> Vec<git::Qualified> {
+    assert!(
+        scale <= 8,
+        "Scale parameter must be less than or equal to 8"
+    );
+    if scale == 0 {
+        return vec![];
+    }
+    let head = repo.head().unwrap().peel_to_commit().unwrap();
+    let rng = fastrand::Rng::with_seed(42);
+    let mut buffer = vec![0; 1024 * 1024 * scale];
+    let mut refs = Vec::new();
+
+    for _ in 0..scale {
+        let signature = git2::Signature::now("Radicle", "radicle@radicle.xyz").unwrap();
+
+        rng.fill(&mut buffer);
+
+        let blob = repo.blob(&buffer).unwrap();
+        let mut builder = repo.treebuilder(None).unwrap();
+        builder.insert("random.txt", blob, 0o100_644).unwrap();
+        let tree_oid = builder.write().unwrap();
+        let tree = repo.find_tree(tree_oid).unwrap();
+        let refstr = repo.head().unwrap();
+        let refstr = refstr.name().unwrap().to_string();
+
+        repo.commit(
+            Some(&refstr),
+            &signature,
+            &signature,
+            &format!("Pushing on the current branch"),
+            &tree,
+            &[&head],
+        )
+        .unwrap();
+
+        refs.push(git::Qualified::from_refstr(RefString::try_from(refstr).unwrap()).unwrap());
+    }
+    refs
+}
+
 
 /// Generate random fixtures.
 pub mod gen {
