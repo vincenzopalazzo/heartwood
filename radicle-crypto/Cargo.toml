@@ -49,6 +49,10 @@ version = "0"
 default-features = false
 optional = true
 
+[dependencies.sqlite3-src]
+version="0.4"
+features=["bundled"]
+
 [dev-dependencies]
 fastrand = { version = "1.8.0", default-features = false }
 qcheck-macros = { version = "1", default-features = false }
