@@ -1372,6 +1372,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "478ee9e62aaeaf5b140bd4138753d1f109765488581444218d3ddda43234f3e8"
 
 [[package]]
+name = "lexopt"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baff4b617f7df3d896f97fe922b64817f6cd9a756bb81d40f8883f2f66dcb401"
+
+[[package]]
 name = "libc"
 version = "0.2.144"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1914,6 +1920,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "radicle-ci"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "lexopt 0.3.0",
+ "radicle-term",
+ "serde",
+ "serde_yaml 0.9.21",
+ "tokio",
+]
+
+[[package]]
 name = "radicle-cli"
 version = "0.8.0"
 dependencies = [
@@ -1921,7 +1939,7 @@ dependencies = [
  "chrono",
  "git-ref-format",
  "json-color",
- "lexopt",
+ "lexopt 0.2.1",
  "log",
  "nonempty 0.8.1",
  "pretty_assertions",
@@ -1934,7 +1952,7 @@ dependencies = [
  "radicle-term",
  "serde",
  "serde_json",
- "serde_yaml",
+ "serde_yaml 0.8.26",
  "similar",
  "tempfile",
  "thiserror",
@@ -2041,7 +2059,7 @@ dependencies = [
  "fastrand",
  "flate2",
  "hyper",
- "lexopt",
+ "lexopt 0.2.1",
  "nonempty 0.8.1",
  "pretty_assertions",
  "radicle",
@@ -2076,7 +2094,7 @@ dependencies = [
  "cyphernet 0.3.0",
  "fastrand",
  "io-reactor",
- "lexopt",
+ "lexopt 0.2.1",
  "libc",
  "localtime",
  "log",
@@ -2177,7 +2195,7 @@ name = "radicle-tui"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "lexopt",
+ "lexopt 0.2.1",
  "radicle",
  "radicle-cli",
  "radicle-surf",
@@ -2482,6 +2500,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_yaml"
+version = "0.9.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9d684e3ec7de3bf5466b32bd75303ac16f0736426e5a4e0d6e489559ce1249c"
+dependencies = [
+ "indexmap",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
 name = "sha1"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2540,6 +2571,15 @@ name = "shlex"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
+
+[[package]]
+name = "signal-hook-registry"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8229b473baa5980ac72ef434c4415e70c4b5e71b423043adb4ba059f89c99a1"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "signature"
@@ -2927,6 +2967,7 @@ dependencies = [
  "mio",
  "num_cpus",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2 0.4.9",
  "tokio-macros",
  "windows-sys 0.48.0",
@@ -3192,6 +3233,12 @@ dependencies = [
  "crypto-common",
  "subtle",
 ]
+
+[[package]]
+name = "unsafe-libyaml"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1865806a559042e51ab5414598446a5871b561d21b6764f2eabb0dd481d880a6"
 
 [[package]]
 name = "ureq"
