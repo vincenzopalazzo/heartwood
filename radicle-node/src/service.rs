@@ -1261,7 +1261,7 @@ where
         let ann = msg.signed(&self.signer);
 
         self.outbox.broadcast(ann, peers);
-
+        // TODO(vincenzopalazzo): store the last announced refs inside the storage;
         Ok(())
     }
 
