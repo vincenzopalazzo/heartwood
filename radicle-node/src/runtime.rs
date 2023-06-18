@@ -14,8 +14,8 @@ use reactor::Reactor;
 use thiserror::Error;
 
 use radicle::git;
-use radicle::node::address;
 use radicle::node::Handle as _;
+use radicle::node::{address, metadata, METADATA_DB_FILE};
 use radicle::node::{ADDRESS_DB_FILE, NODE_ANNOUNCEMENT_FILE, ROUTING_DB_FILE, TRACKING_DB_FILE};
 use radicle::profile::Home;
 use radicle::Storage;
@@ -135,6 +135,7 @@ impl Runtime {
         let address_db = node_dir.join(ADDRESS_DB_FILE);
         let routing_db = node_dir.join(ROUTING_DB_FILE);
         let tracking_db = node_dir.join(TRACKING_DB_FILE);
+        let metadata_db = node_dir.join(METADATA_DB_FILE);
 
         log::info!(target: "node", "Opening address book {}..", address_db.display());
         let addresses = address::Book::open(address_db)?;
@@ -148,6 +149,8 @@ impl Runtime {
 
         log::info!(target: "node", "Default tracking policy set to '{}'", &config.policy);
         log::info!(target: "node", "Initializing service ({:?})..", network);
+
+        let metadata = metadata::Metadata::open(metadata_db).unwrap();
 
         let announcement = if let Some(ann) = fs::read(&node_dir.join(NODE_ANNOUNCEMENT_FILE))
             .ok()
@@ -180,6 +183,7 @@ impl Runtime {
             routing,
             storage.clone(),
             addresses,
+            metadata,
             tracking,
             signer.clone(),
             rng,

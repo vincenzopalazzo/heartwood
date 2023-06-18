@@ -2,6 +2,7 @@ mod features;
 
 pub mod address;
 pub mod events;
+pub mod metadata;
 pub mod routing;
 pub mod tracking;
 
@@ -37,6 +38,8 @@ pub const ROUTING_DB_FILE: &str = "routing.db";
 pub const ADDRESS_DB_FILE: &str = "addresses.db";
 /// Filename of tracking table database under the node directory.
 pub const TRACKING_DB_FILE: &str = "tracking.db";
+/// Filename of tracking table database under the node directory.
+pub const METADATA_DB_FILE: &str = "metadata.db";
 /// Filename of last node announcement, when running in debug mode.
 #[cfg(debug_assertions)]
 pub const NODE_ANNOUNCEMENT_FILE: &str = "announcement.wire.debug";

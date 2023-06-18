@@ -19,8 +19,8 @@ use fastrand::Rng;
 use localtime::{LocalDuration, LocalTime};
 use log::*;
 
-use radicle::node::address;
 use radicle::node::address::{AddressBook, KnownAddress};
+use radicle::node::{address, metadata};
 
 use crate::crypto;
 use crate::crypto::{Signer, Verified};
@@ -175,7 +175,7 @@ pub enum CommandError {
 }
 
 #[derive(Debug)]
-pub struct Service<R, A, S, G> {
+pub struct Service<R, A, S, G, M> {
     /// Service configuration.
     config: Config,
     /// Our cryptographic signer and key.
@@ -186,6 +186,8 @@ pub struct Service<R, A, S, G> {
     routing: R,
     /// Node address manager.
     addresses: A,
+    /// Node metadata manager.
+    metadata: M,
     /// Tracking policy configuration.
     tracking: tracking::Config,
     /// State relating to gossip.
@@ -218,7 +220,7 @@ pub struct Service<R, A, S, G> {
     emitter: Emitter<Event>,
 }
 
-impl<R, A, S, G> Service<R, A, S, G>
+impl<R, A, S, G, M> Service<R, A, S, G, M>
 where
     G: crypto::Signer,
 {
@@ -233,10 +235,11 @@ where
     }
 }
 
-impl<R, A, S, G> Service<R, A, S, G>
+impl<R, A, S, G, M> Service<R, A, S, G, M>
 where
     R: routing::Store,
     A: address::Store,
+    M: metadata::Store,
     S: ReadStorage + 'static,
     G: Signer,
 {
@@ -246,6 +249,7 @@ where
         routing: R,
         storage: S,
         addresses: A,
+        metadata: M,
         tracking: tracking::Config,
         signer: G,
         rng: Rng,
@@ -258,6 +262,7 @@ where
             config,
             storage,
             addresses,
+            metadata,
             tracking,
             signer,
             rng,
@@ -1552,9 +1557,10 @@ pub trait ServiceState {
     fn routing(&self) -> &dyn routing::Store;
 }
 
-impl<R, A, S, G> ServiceState for Service<R, A, S, G>
+impl<R, A, S, G, M> ServiceState for Service<R, A, S, G, M>
 where
     R: routing::Store,
+    M: metadata::Store,
     G: Signer,
     S: ReadStorage,
 {

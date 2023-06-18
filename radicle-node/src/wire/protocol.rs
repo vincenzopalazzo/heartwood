@@ -22,7 +22,7 @@ use netservices::{NetConnection, NetProtocol, NetReader, NetWriter};
 use reactor::Timestamp;
 
 use radicle::collections::HashMap;
-use radicle::node::{address, routing, NodeId};
+use radicle::node::{address, metadata, routing, NodeId};
 use radicle::storage::WriteStorage;
 
 use crate::crypto::Signer;
@@ -299,9 +299,9 @@ impl Peers {
 }
 
 /// Wire protocol implementation for a set of peers.
-pub struct Wire<R, S, W, G: Signer + Ecdh> {
+pub struct Wire<R, S, W, M, G: Signer + Ecdh> {
     /// Backing service instance.
-    service: Service<R, S, W, G>,
+    service: Service<R, S, W, G, M>,
     /// Worker pool interface.
     worker: chan::Sender<Task>,
     /// Used for authentication.
@@ -314,15 +314,16 @@ pub struct Wire<R, S, W, G: Signer + Ecdh> {
     proxy: net::SocketAddr,
 }
 
-impl<R, S, W, G> Wire<R, S, W, G>
+impl<R, S, W, M, G> Wire<R, S, W, M, G>
 where
     R: routing::Store,
     S: address::Store,
+    M: metadata::Store,
     W: WriteStorage + 'static,
     G: Signer + Ecdh<Pk = NodeId>,
 {
     pub fn new(
-        mut service: Service<R, S, W, G>,
+        mut service: Service<R, S, W, G, M>,
         worker: chan::Sender<Task>,
         signer: G,
         proxy: net::SocketAddr,
@@ -430,10 +431,11 @@ where
     }
 }
 
-impl<R, S, W, G> reactor::Handler for Wire<R, S, W, G>
+impl<R, S, W, G, M> reactor::Handler for Wire<R, S, W, M, G>
 where
     R: routing::Store + Send,
     S: address::Store + Send,
+    M: metadata::Store + Send,
     W: WriteStorage + Send + 'static,
     G: Signer + Ecdh<Pk = NodeId> + Clone + Send,
 {
@@ -713,10 +715,11 @@ where
     }
 }
 
-impl<R, S, W, G> Iterator for Wire<R, S, W, G>
+impl<R, S, W, G, M> Iterator for Wire<R, S, W, M, G>
 where
     R: routing::Store,
     S: address::Store,
+    M: metadata::Store,
     W: WriteStorage + 'static,
     G: Signer + Ecdh<Pk = NodeId>,
 {

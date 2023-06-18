@@ -7,6 +7,7 @@ use log::*;
 
 use radicle::node::address;
 use radicle::node::address::Store;
+use radicle::node::metadata;
 use radicle::rad;
 use radicle::storage::ReadRepository;
 use radicle::Storage;
@@ -32,7 +33,7 @@ use crate::Link;
 use crate::{LocalDuration, LocalTime};
 
 /// Service instantiation used for testing.
-pub type Service<S, G> = service::Service<routing::Table, address::Book, S, G>;
+pub type Service<S, G> = service::Service<routing::Table, address::Book, S, G, metadata::Metadata>;
 
 #[derive(Debug)]
 pub struct Peer<S, G> {
@@ -154,6 +155,8 @@ where
         let routing = routing::Table::memory().unwrap();
         let tracking = tracking::Store::memory().unwrap();
         let tracking = tracking::Config::new(config.policy, config.scope, tracking);
+        let metadata = metadata::Metadata::memory().unwrap();
+
         let tempdir = tempfile::tempdir().unwrap();
         let id = *config.signer.public_key();
         let ip = ip.into();
@@ -170,6 +173,7 @@ where
             routing,
             storage,
             config.addrs,
+            metadata,
             tracking,
             config.signer,
             config.rng.clone(),
