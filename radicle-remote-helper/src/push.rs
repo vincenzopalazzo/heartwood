@@ -9,6 +9,7 @@ use thiserror::Error;
 use radicle::cob::patch;
 use radicle::crypto::{PublicKey, Signer};
 use radicle::node;
+use radicle::node::address;
 use radicle::node::{Handle, NodeId};
 use radicle::prelude::Id;
 use radicle::storage;
@@ -71,6 +72,9 @@ pub enum Error {
     /// Patch edit message error.
     #[error(transparent)]
     PatchEdit(#[from] cli::patch::Error),
+    /// Address storage error.
+    #[error(transparent)]
+    Address(#[from] address::Error),
     /// Patch not found in store.
     #[error("patch `{0}` not found")]
     NotFound(patch::PatchId),
@@ -80,6 +84,9 @@ pub enum Error {
     /// COB store error.
     #[error(transparent)]
     Cob(#[from] radicle::cob::store::Error),
+    /// Node error.
+    #[error(transparent)]
+    Node(#[from] radicle::node::Error),
 }
 
 enum Command {
@@ -227,10 +234,13 @@ pub fn run(
             // Connect to local node and announce refs to the network.
             // If our node is not running, we simply skip this step, as the
             // refs will be announced eventually, when the node restarts.
-            let node = radicle::Node::new(profile.socket());
+            let mut node = radicle::Node::new(profile.socket());
+
             if node.is_running() {
                 // Nb. allow this to fail. The push to local storage was still successful.
                 sync(stored.id, node).ok();
+            } else {
+                let _ = node.try_announce_refs(stored.id, profile.home())?;
             }
         }
     }

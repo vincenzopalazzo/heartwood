@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 thiserror = "1"
 radicle-git-ext = { version = "0.6.0" }
+localtime = { version = "1.2.0" }
 
 [dependencies.radicle]
 path = "../radicle"
