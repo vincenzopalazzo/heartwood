@@ -10,7 +10,8 @@ use radicle::cob::issue;
 use radicle::cob::issue::{CloseReason, Issues, State};
 use radicle::cob::thread;
 use radicle::crypto::Signer;
-use radicle::node::{AliasStore, Handle};
+use radicle::node::AliasStore;
+use radicle::node::RefAnnouncement;
 use radicle::prelude::Did;
 use radicle::profile;
 use radicle::storage;
@@ -347,13 +348,12 @@ pub fn run(options: Options, ctx: impl term::Context) -> anyhow::Result<()> {
     }
 
     if announce {
-        match node.announce_refs(rid) {
-            Ok(()) => {}
-            Err(e) if e.is_connection_err() => {
-                term::warning("Could not announce issue refs: node is not running");
-            }
-            Err(e) => return Err(e.into()),
-        }
+        match node.try_announce_refs(rid, profile.home())? {
+            RefAnnouncement::Store => term::warning(
+                "Could not announce issue refs: node is not running. Retry at node restart!",
+            ),
+            RefAnnouncement::Forwarded => {}
+        };
     }
 
     Ok(())

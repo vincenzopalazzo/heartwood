@@ -25,6 +25,7 @@ use anyhow::anyhow;
 
 use radicle::cob::patch;
 use radicle::cob::patch::PatchId;
+use radicle::node::RefAnnouncement;
 use radicle::storage::git::transport;
 use radicle::{prelude::*, Node};
 
@@ -393,5 +394,16 @@ pub fn run(options: Options, ctx: impl term::Context) -> anyhow::Result<()> {
             redact::run(&revision_id, &profile, &repository)?;
         }
     }
+
+    if options.announce {
+        let mut node = Node::new(profile.socket());
+        match node.try_announce_refs(repository.id(), profile.home())? {
+            RefAnnouncement::Store => term::warning(
+                "Could not announce refs: node is not running. We try to announce when node will restart!",
+            ),
+            RefAnnouncement::Forwarded => {}
+        };
+    }
+
     Ok(())
 }
