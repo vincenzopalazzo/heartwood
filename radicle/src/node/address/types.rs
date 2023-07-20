@@ -6,7 +6,7 @@ use nonempty::NonEmpty;
 use crate::collections::HashMap;
 use crate::node;
 use crate::node::{Address, Alias};
-use crate::prelude::Timestamp;
+use crate::prelude::{Id, Timestamp};
 
 /// A map with the ability to randomly select values.
 #[derive(Debug, Clone)]
@@ -87,6 +87,15 @@ pub struct Node {
     pub pow: u32,
     /// When this data was published.
     pub timestamp: Timestamp,
+    /// Las RefsAnnouncements brodcast to the peer.
+    pub last_ref: Option<RefAnnouncements>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RefAnnouncements {
+    pub repo: Id,
+    pub created_at: Timestamp,
+    pub brodcasted_at: Option<Timestamp>,
 }
 
 /// A known address.

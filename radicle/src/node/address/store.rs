@@ -9,11 +9,11 @@ use thiserror::Error;
 use crate::node;
 use crate::node::address::{KnownAddress, Source};
 use crate::node::{Address, Alias, AliasError, AliasStore, NodeId};
-use crate::prelude::Timestamp;
+use crate::prelude::{Id, Timestamp};
 use crate::sql::transaction;
 
-use super::types;
 use super::AddressType;
+use super::{types, RefAnnouncements};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -102,12 +102,32 @@ impl Store for Book {
                 });
             }
 
+            let mut stmt = self.db.prepare(
+                "SELECT rid, created_at
+                          FROM ref_announcements
+                          WHERE node = ? AND brodcasted_at is NULL",
+            )?;
+            stmt.bind((1, node))?;
+
+            let last_ref = stmt.into_iter().next().and_then(|row| {
+                row.ok().map(|row| {
+                    let repo_id = row.read::<Id, _>("rid");
+                    let created_at = row.read::<i64, _>("created_at") as Timestamp;
+                    RefAnnouncements {
+                        repo: repo_id,
+                        created_at,
+                        brodcasted_at: None,
+                    }
+                })
+            });
+
             Ok(Some(types::Node {
                 features,
                 alias,
                 pow,
                 timestamp,
                 addrs,
+                last_ref,
             }))
         } else {
             Ok(None)
@@ -254,6 +274,50 @@ impl Store for Book {
 
         Ok(())
     }
+
+    fn get_ref_announcement(&self, nid: &NodeId) -> Result<Option<RefAnnouncements>, Error> {
+        let mut stmt = self.db.prepare(
+            "SELECT r.rid, r.timestamp, r.message
+             FROM ref_announcements r, addresses a
+             WHERE a.node = ?1 AND r.brodcasted_at is NULL;",
+        )?;
+        stmt.bind((1, nid))?;
+
+        let last_ref = stmt.into_iter().next().and_then(|row| {
+            row.ok().map(|row| {
+                let repo_id = row.read::<Id, _>("rid");
+                let created_at = row.read::<i64, _>("created_at") as Timestamp;
+                RefAnnouncements {
+                    repo: repo_id,
+                    created_at,
+                    brodcasted_at: None,
+                }
+            })
+        });
+        Ok(last_ref)
+    }
+
+    fn insert_ref_announcement(
+        &self,
+        nid: &NodeId,
+        rid: &Id,
+        created_at: Timestamp,
+        brodcasted_at: Option<Timestamp>,
+    ) -> Result<(), Error> {
+        let mut stmt = self.db.prepare(
+            "INSERT INTO ref_announcements
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT DO UPDATE
+             SET created_at = ?3
+             WHERE created_at < ?3",
+        )?;
+        stmt.bind((1, nid))?;
+        stmt.bind((2, rid))?;
+        stmt.bind((3, created_at as i64))?;
+        stmt.bind((4, brodcasted_at.map(|value| value as i64)))?;
+        stmt.next()?;
+        Ok(())
+    }
 }
 
 impl AliasStore for Book {
@@ -298,6 +362,22 @@ pub trait Store {
     fn attempted(&self, nid: &NodeId, addr: &Address, time: Timestamp) -> Result<(), Error>;
     /// Mark a node as successfully connected at a certain time.
     fn connected(&self, nid: &NodeId, addr: &Address, time: Timestamp) -> Result<(), Error>;
+    /// Insert the timestamp and the `rid` of the most recent `RefsAnnouncement` that fails
+    /// to propagate to a `nid`.
+    ///
+    /// - If the `created_at` is lower than the one already stored in the database,
+    ///   it will override the previous entry.
+    /// - If the `broadcasted_at` is specified, this `RefsAnnouncement` will be marked as
+    ///   announced, and it will be kept in the database for historical purposes.
+    fn insert_ref_announcement(
+        &self,
+        nid: &NodeId,
+        rid: &Id,
+        created_at: Timestamp,
+        brodcasted_at: Option<Timestamp>,
+    ) -> Result<(), Error>;
+    /// Get the last info RefsAnnouncement sent to the specific peer.
+    fn get_ref_announcement(&self, nid: &NodeId) -> Result<Option<RefAnnouncements>, Error>;
 }
 
 impl TryFrom<&sql::Value> for Source {

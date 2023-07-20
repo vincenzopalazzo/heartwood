@@ -37,3 +37,18 @@ create table if not exists "addresses" (
   unique ("node", "type", "value")
   --
 ) strict;
+
+create table if not exists "ref_announcements" (
+  -- Node ID.
+  "node"              text      not null references "nodes" ("id") on delete cascade,
+  -- Repository ID.
+  "rid"               text      not null,
+  -- When this ref_announcements was created.
+  "created_at"        integer    not null,
+  -- When this ref_announcements was re-brodcasted with success.
+  "brodcasted_at"     integer    default null,
+  -- Defined the unique constraint on the nid and rid, to allow
+  -- to keep just one entry for each (node-repository) tuple.
+  unique ("node", "rid")
+  --
+) strict;

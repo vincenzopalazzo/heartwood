@@ -23,6 +23,8 @@ use serde_json as json;
 
 use crate::crypto::PublicKey;
 use crate::identity::Id;
+use crate::node::address::Store as _;
+use crate::node::routing::Store as _;
 use crate::storage::RefUpdate;
 
 pub use config::Config;
@@ -541,6 +543,10 @@ pub enum Error {
     Connect(#[from] io::Error),
     #[error("failed to call node: {0}")]
     Call(#[from] CallError),
+    #[error("{0}")]
+    Routing(#[from] routing::Error),
+    #[error("{0}")]
+    Address(#[from] address::Error),
     #[error("node: {0}")]
     Node(String),
     #[error("received empty response for `{cmd}` command")]
@@ -612,6 +618,11 @@ pub trait Handle: Clone + Sync + Send {
 
 /// Public node & device identifier.
 pub type NodeId = PublicKey;
+
+pub enum RefAnnouncement {
+    Store,
+    Forwarded,
+}
 
 /// Node controller.
 #[derive(Debug, Clone)]
@@ -692,6 +703,25 @@ impl Node {
             }
         }
         Ok(AnnounceResult { timeout, synced })
+    }
+
+    /// Try to Announce refs of the given `rid` if the node is running,
+    /// otherwise store the minimal information to re-announce when the node
+    /// will start.
+    pub fn try_announce_refs(&mut self, rid: Id, path: &Path) -> Result<RefAnnouncement, Error> {
+        if self.is_running() {
+            self.announce_refs(rid)?;
+            return Ok(RefAnnouncement::Forwarded);
+        }
+        let address_db = path.join(ADDRESS_DB_FILE);
+        let routing_db = routing::Table::open(path.join(ROUTING_DB_FILE))?;
+        let seeds = routing_db.get(&rid)?;
+        let addresses = address::Book::open(address_db)?;
+        // FIXME: use SQL transaction!
+        for seed in seeds.into_iter() {
+            addresses.insert_ref_announcement(&seed, &rid, LocalTime::now().as_millis(), None)?;
+        }
+        Ok(RefAnnouncement::Store)
     }
 }
 
