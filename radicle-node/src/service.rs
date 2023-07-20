@@ -107,6 +107,8 @@ pub enum Error {
     Routing(#[from] routing::Error),
     #[error(transparent)]
     Tracking(#[from] tracking::Error),
+    #[error(transparent)]
+    Adresses(#[from] address::Error),
     #[error("namespaces error: {0}")]
     Namespaces(#[from] NamespacesError),
 }
@@ -426,6 +428,26 @@ where
                 .repo_policies()?
                 .filter_map(|t| (t.policy == tracking::Policy::Track).then_some(t.id)),
         );
+
+        // Try to re-brodcasting ref unannounced for the
+        // specifics peers that we are connected to.
+        let peers = self
+            .sessions()
+            .connected()
+            .map(|(peer, _)| peer.to_owned())
+            .collect::<Vec<_>>();
+
+        for peer in peers {
+            let unannouncements = self.addresses().get_ref_announcement(&peer)?;
+            unannouncements.and_then(|refs| {
+                log::info!(
+                    "Re-announcing refs for repository `{}` to the peer `{peer}`",
+                    refs.repo
+                );
+                self.announce_refs(refs.repo, [peer]).map(|_| refs).ok()
+            });
+        }
+
         // Start periodic tasks.
         self.outbox.wakeup(IDLE_INTERVAL);
 
@@ -1253,9 +1275,7 @@ where
             timestamp,
         });
         let ann = msg.signed(&self.signer);
-
         self.outbox.broadcast(ann, peers);
-
         Ok(())
     }
 
